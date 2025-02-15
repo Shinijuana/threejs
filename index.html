@@ -25,12 +25,14 @@
 
 			import * as THREE from 'https://unpkg.com/three/build/three.module.js';
 			import { ARButton } from 'https://unpkg.com/three/examples/jsm/webxr/ARButton.js';
+			import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js';  // Importa il loader GLTF
 
 			let container;
 			let camera, scene, renderer;
 			let controller;
 
 			let reticle;
+			let model = null;  // Variabile per il modello
 
 			let hitTestSource = null;
 			let hitTestSourceRequested = false;
@@ -50,8 +52,7 @@
 				light.position.set( 0.5, 1, 0.25 );
 				scene.add( light );
 
-				//
-
+				// Renderer setup
 				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -59,32 +60,10 @@
 				renderer.xr.enabled = true;
 				container.appendChild( renderer.domElement );
 
-				//
-
+				// ARButton setup
 				document.body.appendChild( ARButton.createButton( renderer, { requiredFeatures: [ 'hit-test' ] } ) );
 
-				//
-
-				const geometry = new THREE.CylinderGeometry( 0.1, 0.1, 0.2, 32 ).translate( 0, 0.1, 0 );
-
-				function onSelect() {
-
-					if ( reticle.visible ) {
-
-						const material = new THREE.MeshPhongMaterial( { color: 0xffffff * Math.random() } );
-						const mesh = new THREE.Mesh( geometry, material );
-						reticle.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
-						mesh.scale.y = Math.random() * 2 + 1;
-						scene.add( mesh );
-
-					}
-
-				}
-
-				controller = renderer.xr.getController( 0 );
-				controller.addEventListener( 'select', onSelect );
-				scene.add( controller );
-
+				// Setup reticle (the ring)
 				reticle = new THREE.Mesh(
 					new THREE.RingGeometry( 0.15, 0.2, 32 ).rotateX( - Math.PI / 2 ),
 					new THREE.MeshBasicMaterial()
@@ -93,23 +72,33 @@
 				reticle.visible = false;
 				scene.add( reticle );
 
-				//
+				// Load the 3D model
+				const loader = new GLTFLoader();
+				loader.load( 'assets/3G-C2.glb', function ( gltf ) {
+					model = gltf.scene;
+					model.scale.set( 0.5, 0.5, 0.5 ); // Scale it if needed
+					scene.add( model );
+				}, undefined, function ( error ) {
+					console.error( error );
+				});
 
+				// Controller setup
+				controller = renderer.xr.getController( 0 );
+				controller.addEventListener( 'select', onSelect );
+				scene.add( controller );
+
+				// Window resize listener
 				window.addEventListener( 'resize', onWindowResize );
-
 			}
 
+			// Window resize handler
 			function onWindowResize() {
-
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-
 				renderer.setSize( window.innerWidth, window.innerHeight );
-
 			}
 
-			//
-
+			// Animation loop
 			function animate( timestamp, frame ) {
 
 				if ( frame ) {
@@ -151,10 +140,13 @@
 							reticle.visible = true;
 							reticle.matrix.fromArray( hit.getPose( referenceSpace ).transform.matrix );
 
+							if ( model ) {
+								// Posiziona il modello al punto del reticle
+								model.position.setFromMatrixPosition( reticle.matrix );
+							}
+
 						} else {
-
 							reticle.visible = false;
-
 						}
 
 					}
