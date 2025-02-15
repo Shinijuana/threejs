@@ -25,7 +25,7 @@
 
       import * as THREE from 'https://unpkg.com/three/build/three.module.js';
       import { ARButton } from 'https://unpkg.com/three/examples/jsm/webxr/ARButton.js';
-      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js'; // Carica GLTFLoader per il modello
+      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js'; 
 
       let placedModel = false;
       let container;
@@ -36,6 +36,10 @@
       let hitTestSource = null;
       let hitTestSourceRequested = false;
       let model; // Variabile per il modello 3D
+      let selectedModel = null; // Riferimento al modello selezionato
+      let touchStartDistance = 0; // Per la gestione del pinch
+      let touchStartScale = 1; // Scala iniziale per il pinch
+      let touchStartRotation = { x: 0, y: 0 }; // Angolo di rotazione iniziale
 
       init();
 
@@ -101,28 +105,84 @@
         shadowPlane.receiveShadow = true;  // Il piano riceve l'ombra
         scene.add(shadowPlane);
 
+        // Gestisci gli eventi touch
+        window.addEventListener('touchstart', onTouchStart);
+        window.addEventListener('touchmove', onTouchMove);
+        window.addEventListener('touchend', onTouchEnd);
+
         window.addEventListener('resize', onWindowResize);
       }
 
-      // Funzione per gestire il ridimensionamento della finestra
       function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
-      // Funzione per gestire il tap sul reticolo
       function onSelect() {
         if (reticle.visible && model) {
           if (placedModel == false) {
             const cloneModel = model.clone();
             reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-            cloneModel.scale.set(0.1, 0.1, 0.1); // Scala il modello
-            cloneModel.castShadow = true;  // Il clone proietta l'ombra
-            cloneModel.receiveShadow = true;  // Il clone riceve l'ombra
+            cloneModel.scale.set(0.5, 0.5, 0.5); // Scala il modello
+            cloneModel.castShadow = true;
+            cloneModel.receiveShadow = true;
             scene.add(cloneModel);
+            selectedModel = cloneModel;
             placedModel = true;
           }
+        }
+      }
+
+      // Gestione del pinch per zoom
+      function onTouchStart(event) {
+        if (event.touches.length === 2 && selectedModel) {
+          // Calcola la distanza iniziale tra le due dita
+          touchStartDistance = getTouchDistance(event);
+          touchStartScale = selectedModel.scale.x; // Scala iniziale
+        }
+        if (event.touches.length === 1 && selectedModel) {
+          // Calcola la rotazione iniziale
+          touchStartRotation.x = event.touches[0].clientX;
+          touchStartRotation.y = event.touches[0].clientY;
+        }
+      }
+
+      // Gestione del movimento per drag, pinch, e rotazione
+      function onTouchMove(event) {
+        if (event.touches.length === 2 && selectedModel) {
+          // Calcola la distanza tra le due dita
+          const touchMoveDistance = getTouchDistance(event);
+          const scaleFactor = touchMoveDistance / touchStartDistance;
+          selectedModel.scale.set(touchStartScale * scaleFactor, touchStartScale * scaleFactor, touchStartScale * scaleFactor);
+        }
+
+        if (event.touches.length === 1 && selectedModel) {
+          const deltaX = event.touches[0].clientX - touchStartRotation.x;
+          const deltaY = event.touches[0].clientY - touchStartRotation.y;
+          selectedModel.rotation.y += deltaX * 0.005; // Rotazione su Y
+          selectedModel.rotation.x += deltaY * 0.005; // Rotazione su X
+          touchStartRotation.x = event.touches[0].clientX;
+          touchStartRotation.y = event.touches[0].clientY;
+        }
+      }
+
+      // Funzione per calcolare la distanza tra due tocchi
+      function getTouchDistance(event) {
+        const touch1 = event.touches[0];
+        const touch2 = event.touches[1];
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function onTouchEnd(event) {
+        if (event.touches.length < 2) {
+          touchStartDistance = 0;
+          touchStartScale = 1;
+        }
+        if (event.touches.length < 1) {
+          touchStartRotation = { x: 0, y: 0 };
         }
       }
 
