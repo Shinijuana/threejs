@@ -5,8 +5,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link type="text/css" rel="stylesheet" href="main.css">
-    <!-- Include Hammer.js -->
-    <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
   </head>
   <body>
 
@@ -14,11 +12,21 @@
       <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> ar - hit test<br/>(Chrome Android 81+)
     </div>
 
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three/build/three.module.js",
+      "three/addons/": "./jsm/"
+    }
+  }
+</script>
+
+
     <script type="module">
 
       import * as THREE from 'https://unpkg.com/three/build/three.module.js';
       import { ARButton } from 'https://unpkg.com/three/examples/jsm/webxr/ARButton.js';
-      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js';
+      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js'; // Carica GLTFLoader per il modello
 
       let placedModel = false;
       let container;
@@ -28,13 +36,7 @@
 
       let hitTestSource = null;
       let hitTestSourceRequested = false;
-      let model;
-      let selectedModel = null;
-      let touchStartDistance = 0;
-      let touchStartScale = 0.3;
-      let touchStartRotation = { x: 0, y: 0 };
-      let touchStartPosition = { x: 0, y: 0 };
-      let isDragging = false;
+      let model; // Variabile per il modello 3D
 
       init();
 
@@ -50,22 +52,20 @@
         light.position.set(0.5, 1, 0.25);
         scene.add(light);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 10, 5);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
-
+        // Setup renderer
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setAnimationLoop(animate);
         renderer.xr.enabled = true;
-        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
+        // Creazione del pulsante ARButton
         const arButton = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
-        document.body.appendChild(arButton);
+        document.body.appendChild(arButton);  // Appendi esplicitamente al body
+        console.log('ARButton aggiunto alla pagina:', arButton);
 
+        // Setup reticolo (la parte del ring)
         reticle = new THREE.Mesh(
           new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
           new THREE.MeshBasicMaterial()
@@ -74,91 +74,47 @@
         reticle.visible = false;
         scene.add(reticle);
 
+        // Setup AR controller
         controller = renderer.xr.getController(0);
-        controller.addEventListener('select', onSelect);
+        controller.addEventListener('select', onSelect); // Aggiungi listener per il tap
         scene.add(controller);
 
+        // Carica il modello 3D (commentato per il debug)
+        // Se non funziona senza il caricamento del modello, puoi decommentarlo per provare successivamente.
+        
         const loader = new GLTFLoader();
-        loader.load('assets/3G-C2.glb', (gltf) => {
+          loader.load('assets/3G-C2.glb', (gltf) => {
           model = gltf.scene;
-          model.castShadow = true;
-          model.receiveShadow = true;
         });
 
-        const shadowPlaneGeometry = new THREE.PlaneGeometry(20, 20);
-        const shadowPlaneMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
-        const shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowPlaneMaterial);
-        shadowPlane.rotation.x = -Math.PI / 2;
-        shadowPlane.position.y = -0.1;
-        shadowPlane.receiveShadow = true;
-        scene.add(shadowPlane);
 
-        // Inizializza Hammer.js
-        const hammer = new Hammer(container);
+        
 
-        // Abilita gesti di pan, pinch e rotate
-        hammer.get('pinch').set({ enable: true });
-        hammer.get('rotate').set({ enable: true });
-        hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
-
-        // Aggiungi gli event listener per le gesture
-        hammer.on('pinchstart pinchmove', onPinch);
-        hammer.on('rotate', onRotate);
-        hammer.on('panstart panmove', onPan);
-        hammer.on('panend', onPanEnd);
-
+        // Ascoltatore di resize finestra
         window.addEventListener('resize', onWindowResize);
       }
 
+      // Funzione per gestire il ridimensionamento della finestra
       function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
-      function onSelect() {
-        if (reticle.visible && model) {
-          if (placedModel == false) {
-            const cloneModel = model.clone();
-            reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-            cloneModel.scale.set(.3, .3, .3); 
-            cloneModel.castShadow = true;
-            cloneModel.receiveShadow = true;
-            scene.add(cloneModel);
-            selectedModel = cloneModel;
-            placedModel = true;
-          }
-        }
-      }
+      // Funzione per gestire il tap sul reticolo
+     function onSelect() {
+  if (reticle.visible && model) {
+    if (placedModel == false) { // Correzione: aggiungi le parentesi graffe
+      const cloneModel = model.clone(); // Crea una copia del modello
+      reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
+      cloneModel.scale.set(0.3, 0.3, 0.3); // Modifica la scala
+      scene.add(cloneModel); // Aggiungi il modello alla scena
+      placedModel = true; // Imposta placedModel su true per evitare altri modelli
+    }
+  }
+}
 
-      function onPinch(event) {
-        if (selectedModel) {
-          const scaleFactor = touchStartScale * event.scale;
-          selectedModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
-        }
-      }
-
-      function onRotate(event) {
-        if (selectedModel) {
-          const rotationDelta = event.rotation - touchStartRotation.y;
-          selectedModel.rotation.y += rotationDelta * 0.01; // Moltiplicato per regolare la sensibilità
-          touchStartRotation.y = event.rotation;
-        }
-      }
-
-      function onPan(event) {
-        if (selectedModel) {
-          const deltaX = event.deltaX * 0.005;
-          const deltaY = event.deltaY * 0.005;
-          selectedModel.position.x += deltaX;
-          selectedModel.position.z += deltaY;
-        }
-      }
-
-      function onPanEnd(event) {
-        // Se necessario, gestisci il termine del pan
-      }
-
+      // Ciclo di animazione
       function animate(timestamp, frame) {
         if (frame) {
           const referenceSpace = renderer.xr.getReferenceSpace();
