@@ -28,6 +28,7 @@
       import { ARButton } from 'https://unpkg.com/three/examples/jsm/webxr/ARButton.js';
       import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js'; // Carica GLTFLoader per il modello
 
+      let placedModel = false;
       let container;
       let camera, scene, renderer;
       let controller;
@@ -100,13 +101,16 @@
       }
 
       // Funzione per gestire il tap sul reticolo
-      function onSelect() {
-        if (reticle.visible && model) {
-          const cloneModel = model.clone(); // Crea una copia del modello
-          reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-          scene.add(cloneModel); // Aggiungi il modello alla scena
-        }
-      }
+     function onSelect() {
+  if (reticle.visible && model) {
+    if (placedModel == false) { // Correzione: aggiungi le parentesi graffe
+      const cloneModel = model.clone(); // Crea una copia del modello
+      reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
+      scene.add(cloneModel); // Aggiungi il modello alla scena
+      placedModel = true; // Imposta placedModel su true per evitare altri modelli
+    }
+  }
+}
 
       // Ciclo di animazione
       function animate(timestamp, frame) {
