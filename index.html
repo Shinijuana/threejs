@@ -164,9 +164,9 @@
           const deltaX = event.touches[0].clientX - touchStartPosition.x;
           const deltaY = event.touches[0].clientY - touchStartPosition.y;
           
-          // Muovi il modello (trascinamento) lungo X e Z, con un fattore di sensibilità
-          selectedModel.position.x += deltaX * 0.01; // Ridotto per evitare un movimento troppo veloce
-          selectedModel.position.z += deltaY * 0.01; // Ridotto per evitare un movimento troppo veloce
+          // Muovi il modello (trascinamento) lungo X e Z, con un fattore di sensibilità più basso
+          selectedModel.position.x += deltaX * 0.001; // Ridotto per evitare un movimento troppo veloce
+          selectedModel.position.z += deltaY * 0.001; // Ridotto per evitare un movimento troppo veloce
 
           // Aggiorna la posizione di partenza per il drag
           touchStartPosition.x = event.touches[0].clientX;
@@ -175,7 +175,7 @@
 
         if (event.touches.length === 1 && selectedModel) {
           // Rotazione solo sull'asse Y
-          const deltaRotation = (event.touches[0].clientX - touchStartPosition.x) * 0.005; // Aggiungi un fattore di sensibilità
+          const deltaRotation = (event.touches[0].clientX - touchStartPosition.x) * 0.002; // Sensibilità ridotta
           selectedModel.rotation.y += deltaRotation;
           touchStartPosition.x = event.touches[0].clientX; // Aggiorna la posizione iniziale per la rotazione
         }
