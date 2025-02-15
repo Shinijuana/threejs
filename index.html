@@ -21,7 +21,6 @@
   }
 </script>
 
-
     <script type="module">
 
       import * as THREE from 'https://unpkg.com/three/build/three.module.js';
@@ -52,20 +51,26 @@
         light.position.set(0.5, 1, 0.25);
         scene.add(light);
 
-        // Setup renderer
+        // Creazione della luce direzionale per l'ombra
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 5); // Posizione della luce
+        directionalLight.castShadow = true; // Abilita l'ombra per questa luce
+        scene.add(directionalLight);
+
+        // Setup renderer per supportare le ombre
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setAnimationLoop(animate);
         renderer.xr.enabled = true;
+        renderer.shadowMap.enabled = true;  // Abilita le ombre nel renderer
         container.appendChild(renderer.domElement);
 
         // Creazione del pulsante ARButton
         const arButton = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
-        document.body.appendChild(arButton);  // Appendi esplicitamente al body
-        console.log('ARButton aggiunto alla pagina:', arButton);
+        document.body.appendChild(arButton);
 
-        // Setup reticolo (la parte del ring)
+        // Setup reticolo
         reticle = new THREE.Mesh(
           new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
           new THREE.MeshBasicMaterial()
@@ -76,21 +81,26 @@
 
         // Setup AR controller
         controller = renderer.xr.getController(0);
-        controller.addEventListener('select', onSelect); // Aggiungi listener per il tap
+        controller.addEventListener('select', onSelect);
         scene.add(controller);
 
-        // Carica il modello 3D (commentato per il debug)
-        // Se non funziona senza il caricamento del modello, puoi decommentarlo per provare successivamente.
-        
+        // Carica il modello 3D
         const loader = new GLTFLoader();
-          loader.load('assets/3G-C2.glb', (gltf) => {
+        loader.load('assets/3G-C2.glb', (gltf) => {
           model = gltf.scene;
+          model.castShadow = true;  // Il modello proietta l'ombra
+          model.receiveShadow = true;  // Il modello riceve l'ombra
         });
 
+        // Aggiungi un piano alla scena per ricevere l'ombra
+        const shadowPlaneGeometry = new THREE.PlaneGeometry(20, 20);
+        const shadowPlaneMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
+        const shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowPlaneMaterial);
+        shadowPlane.rotation.x = -Math.PI / 2;  // Ruota il piano per posizionarlo a terra
+        shadowPlane.position.y = -0.1;  // Posiziona il piano appena sotto il modello
+        shadowPlane.receiveShadow = true;  // Il piano riceve l'ombra
+        scene.add(shadowPlane);
 
-        
-
-        // Ascoltatore di resize finestra
         window.addEventListener('resize', onWindowResize);
       }
 
@@ -102,17 +112,19 @@
       }
 
       // Funzione per gestire il tap sul reticolo
-     function onSelect() {
-  if (reticle.visible && model) {
-    if (placedModel == false) { // Correzione: aggiungi le parentesi graffe
-      const cloneModel = model.clone(); // Crea una copia del modello
-      reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-      cloneModel.scale.set(0.1, 0.1, 0.1); // Modifica la scala
-      scene.add(cloneModel); // Aggiungi il modello alla scena
-      placedModel = true; // Imposta placedModel su true per evitare altri modelli
-    }
-  }
-}
+      function onSelect() {
+        if (reticle.visible && model) {
+          if (placedModel == false) {
+            const cloneModel = model.clone();
+            reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
+            cloneModel.scale.set(0.1, 0.1, 0.1); // Scala il modello
+            cloneModel.castShadow = true;  // Il clone proietta l'ombra
+            cloneModel.receiveShadow = true;  // Il clone riceve l'ombra
+            scene.add(cloneModel);
+            placedModel = true;
+          }
+        }
+      }
 
       // Ciclo di animazione
       function animate(timestamp, frame) {
