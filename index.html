@@ -79,7 +79,7 @@
         // Setup reticolo
         reticle = new THREE.Mesh(
           new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
-          new THREE.MeshBasicMaterial()
+          new THREE.MeshBasicMaterial({ opacity: 0.3 })
         );
         reticle.matrixAutoUpdate = false;
         reticle.visible = false;
@@ -103,7 +103,7 @@
         const shadowPlaneMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
         const shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowPlaneMaterial);
         shadowPlane.rotation.x = -Math.PI / 2;  // Ruota il piano per posizionarlo a terra
-        shadowPlane.position.y = -0.1;  // Posiziona il piano appena sotto il modello
+        shadowPlane.position.y = 0;  // Posiziona il piano appena sotto il modello
         shadowPlane.receiveShadow = true;  // Il piano riceve l'ombra
         scene.add(shadowPlane);
 
@@ -126,7 +126,7 @@
           if (placedModel == false) {
             const cloneModel = model.clone();
             reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-            cloneModel.scale.set(touchStartScale, touchStartScale, touchStartScale); // Impostiamo la scala a 0.3
+            cloneModel.scale.set(.3, .3, .3); // Impostiamo la scala a 0.3
             cloneModel.castShadow = true;
             cloneModel.receiveShadow = true;
             scene.add(cloneModel);
