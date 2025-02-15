@@ -126,7 +126,7 @@
           if (placedModel == false) {
             const cloneModel = model.clone();
             reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-            cloneModel.scale.set(0.3, 0.3, 0.3); // Scala il modello
+            cloneModel.scale.set(0.1, 0.1, 0.1); // Scala il modello
             cloneModel.castShadow = true;
             cloneModel.receiveShadow = true;
             scene.add(cloneModel);
@@ -164,13 +164,20 @@
           const deltaX = event.touches[0].clientX - touchStartPosition.x;
           const deltaY = event.touches[0].clientY - touchStartPosition.y;
           
-          // Muovi il modello (trascinamento) lungo X e Z
-          selectedModel.position.x += deltaX * 0.01; // Velocità di movimento
-          selectedModel.position.z += deltaY * 0.01; // Velocità di movimento
+          // Muovi il modello (trascinamento) lungo X e Z, con un fattore di sensibilità
+          selectedModel.position.x += deltaX * 0.01; // Ridotto per evitare un movimento troppo veloce
+          selectedModel.position.z += deltaY * 0.01; // Ridotto per evitare un movimento troppo veloce
 
           // Aggiorna la posizione di partenza per il drag
           touchStartPosition.x = event.touches[0].clientX;
           touchStartPosition.y = event.touches[0].clientY;
+        }
+
+        if (event.touches.length === 1 && selectedModel) {
+          // Rotazione solo sull'asse Y
+          const deltaRotation = (event.touches[0].clientX - touchStartPosition.x) * 0.005; // Aggiungi un fattore di sensibilità
+          selectedModel.rotation.y += deltaRotation;
+          touchStartPosition.x = event.touches[0].clientX; // Aggiorna la posizione iniziale per la rotazione
         }
       }
 
