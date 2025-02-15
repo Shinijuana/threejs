@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link type="text/css" rel="stylesheet" href="main.css">
+    <!-- Include Hammer.js -->
+    <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
   </head>
   <body>
 
@@ -12,20 +14,11 @@
       <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> ar - hit test<br/>(Chrome Android 81+)
     </div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three/build/three.module.js",
-      "three/addons/": "./jsm/"
-    }
-  }
-</script>
-
     <script type="module">
 
       import * as THREE from 'https://unpkg.com/three/build/three.module.js';
       import { ARButton } from 'https://unpkg.com/three/examples/jsm/webxr/ARButton.js';
-      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js'; 
+      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js';
 
       let placedModel = false;
       let container;
@@ -35,13 +28,13 @@
 
       let hitTestSource = null;
       let hitTestSourceRequested = false;
-      let model; // Variabile per il modello 3D
-      let selectedModel = null; // Riferimento al modello selezionato
-      let touchStartDistance = 0; // Per la gestione del pinch
-      let touchStartScale = 0.3; // Scala iniziale
-      let touchStartRotation = { x: 0, y: 0 }; // Angolo di rotazione iniziale
-      let touchStartPosition = { x: 0, y: 0 }; // Posizione di partenza per il drag
-      let isDragging = false; // Variabile di stato per il drag
+      let model;
+      let selectedModel = null;
+      let touchStartDistance = 0;
+      let touchStartScale = 0.3;
+      let touchStartRotation = { x: 0, y: 0 };
+      let touchStartPosition = { x: 0, y: 0 };
+      let isDragging = false;
 
       init();
 
@@ -57,60 +50,62 @@
         light.position.set(0.5, 1, 0.25);
         scene.add(light);
 
-        // Creazione della luce direzionale per l'ombra
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 10, 5); // Posizione della luce
-        directionalLight.castShadow = true; // Abilita l'ombra per questa luce
+        directionalLight.position.set(5, 10, 5);
+        directionalLight.castShadow = true;
         scene.add(directionalLight);
 
-        // Setup renderer per supportare le ombre
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setAnimationLoop(animate);
         renderer.xr.enabled = true;
-        renderer.shadowMap.enabled = true;  // Abilita le ombre nel renderer
+        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        // Creazione del pulsante ARButton
         const arButton = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
         document.body.appendChild(arButton);
 
-        // Setup reticolo
         reticle = new THREE.Mesh(
           new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
-          new THREE.MeshBasicMaterial({ opacity: 0.3 })
+          new THREE.MeshBasicMaterial()
         );
         reticle.matrixAutoUpdate = false;
         reticle.visible = false;
         scene.add(reticle);
 
-        // Setup AR controller
         controller = renderer.xr.getController(0);
         controller.addEventListener('select', onSelect);
         scene.add(controller);
 
-        // Carica il modello 3D
         const loader = new GLTFLoader();
         loader.load('assets/3G-C2.glb', (gltf) => {
           model = gltf.scene;
-          model.castShadow = true;  // Il modello proietta l'ombra
-          model.receiveShadow = true;  // Il modello riceve l'ombra
+          model.castShadow = true;
+          model.receiveShadow = true;
         });
 
-        // Aggiungi un piano alla scena per ricevere l'ombra
         const shadowPlaneGeometry = new THREE.PlaneGeometry(20, 20);
         const shadowPlaneMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
         const shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowPlaneMaterial);
-        shadowPlane.rotation.x = -Math.PI / 2;  // Ruota il piano per posizionarlo a terra
-        shadowPlane.position.y = 0;  // Posiziona il piano appena sotto il modello
-        shadowPlane.receiveShadow = true;  // Il piano riceve l'ombra
+        shadowPlane.rotation.x = -Math.PI / 2;
+        shadowPlane.position.y = -0.1;
+        shadowPlane.receiveShadow = true;
         scene.add(shadowPlane);
 
-        // Gestisci gli eventi touch
-        window.addEventListener('touchstart', onTouchStart);
-        window.addEventListener('touchmove', onTouchMove);
-        window.addEventListener('touchend', onTouchEnd);
+        // Inizializza Hammer.js
+        const hammer = new Hammer(container);
+
+        // Abilita gesti di pan, pinch e rotate
+        hammer.get('pinch').set({ enable: true });
+        hammer.get('rotate').set({ enable: true });
+        hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+        // Aggiungi gli event listener per le gesture
+        hammer.on('pinchstart pinchmove', onPinch);
+        hammer.on('rotate', onRotate);
+        hammer.on('panstart panmove', onPan);
+        hammer.on('panend', onPanEnd);
 
         window.addEventListener('resize', onWindowResize);
       }
@@ -126,7 +121,7 @@
           if (placedModel == false) {
             const cloneModel = model.clone();
             reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-            cloneModel.scale.set(.3, .3, .3); // Impostiamo la scala a 0.3
+            cloneModel.scale.set(.3, .3, .3); 
             cloneModel.castShadow = true;
             cloneModel.receiveShadow = true;
             scene.add(cloneModel);
@@ -136,71 +131,34 @@
         }
       }
 
-      // Gestione del pinch per zoom
-      function onTouchStart(event) {
-        if (event.touches.length === 2 && selectedModel) {
-          // Calcola la distanza iniziale tra le due dita
-          touchStartDistance = getTouchDistance(event);
-          touchStartScale = selectedModel.scale.x; // Scala iniziale
-        }
-        if (event.touches.length === 1 && selectedModel) {
-          // Calcola la posizione di partenza per il drag
-          touchStartPosition.x = event.touches[0].clientX;
-          touchStartPosition.y = event.touches[0].clientY;
-          isDragging = true;
+      function onPinch(event) {
+        if (selectedModel) {
+          const scaleFactor = touchStartScale * event.scale;
+          selectedModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
         }
       }
 
-      // Gestione del movimento per drag, pinch, e rotazione
-      function onTouchMove(event) {
-        if (event.touches.length === 2 && selectedModel) {
-          // Calcola la distanza tra le due dita
-          const touchMoveDistance = getTouchDistance(event);
-          const scaleFactor = touchMoveDistance / touchStartDistance;
-          selectedModel.scale.set(touchStartScale * scaleFactor, touchStartScale * scaleFactor, touchStartScale * scaleFactor);
-        }
-
-        if (event.touches.length === 1 && selectedModel && isDragging) {
-          const deltaX = event.touches[0].clientX - touchStartPosition.x;
-          const deltaY = event.touches[0].clientY - touchStartPosition.y;
-          
-          // Muovi il modello (trascinamento) lungo X e Z, con un fattore di sensibilità più bilanciato
-          selectedModel.position.x += deltaX * 0.005; // Sensibilità più bassa
-          selectedModel.position.z += deltaY * 0.005; // Sensibilità più bassa
-
-          // Aggiorna la posizione di partenza per il drag
-          touchStartPosition.x = event.touches[0].clientX;
-          touchStartPosition.y = event.touches[0].clientY;
-        }
-
-        if (event.touches.length === 1 && selectedModel) {
-          // Rotazione solo sull'asse Y tramite un movimento orizzontale
-          const deltaRotation = (event.touches[0].clientX - touchStartPosition.x) * 0.005; // Sensibilità ridotta
-          selectedModel.rotation.y += deltaRotation;
-          touchStartPosition.x = event.touches[0].clientX; // Aggiorna la posizione iniziale per la rotazione
+      function onRotate(event) {
+        if (selectedModel) {
+          const rotationDelta = event.rotation - touchStartRotation.y;
+          selectedModel.rotation.y += rotationDelta * 0.01; // Moltiplicato per regolare la sensibilità
+          touchStartRotation.y = event.rotation;
         }
       }
 
-      // Funzione per calcolare la distanza tra due tocchi
-      function getTouchDistance(event) {
-        const touch1 = event.touches[0];
-        const touch2 = event.touches[1];
-        const dx = touch2.clientX - touch1.clientX;
-        const dy = touch2.clientY - touch1.clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-      }
-
-      function onTouchEnd(event) {
-        if (event.touches.length < 2) {
-          touchStartDistance = 0;
-          touchStartScale = 1;
-        }
-        if (event.touches.length < 1) {
-          isDragging = false;
+      function onPan(event) {
+        if (selectedModel) {
+          const deltaX = event.deltaX * 0.005;
+          const deltaY = event.deltaY * 0.005;
+          selectedModel.position.x += deltaX;
+          selectedModel.position.z += deltaY;
         }
       }
 
-      // Ciclo di animazione
+      function onPanEnd(event) {
+        // Se necessario, gestisci il termine del pan
+      }
+
       function animate(timestamp, frame) {
         if (frame) {
           const referenceSpace = renderer.xr.getReferenceSpace();
