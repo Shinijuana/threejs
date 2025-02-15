@@ -85,9 +85,6 @@
         const loader = new GLTFLoader();
           loader.load('assets/3G-C2.glb', (gltf) => {
           model = gltf.scene;
-          model.scale.set(0.1, 0.1, 0.1); // Modifica la scala
-          model.updateMatrixWorld(); // Assicura che le trasformazioni siano applicate
-          scene.add(model); // Aggiungi il modello alla scena
         });
 
 
@@ -110,6 +107,7 @@
     if (placedModel == false) { // Correzione: aggiungi le parentesi graffe
       const cloneModel = model.clone(); // Crea una copia del modello
       reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
+      cloneModel.scale.set(0.1, 0.1, 0.1); // Modifica la scala
       scene.add(cloneModel); // Aggiungi il modello alla scena
       placedModel = true; // Imposta placedModel su true per evitare altri modelli
     }
