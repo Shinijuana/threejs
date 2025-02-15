@@ -25,6 +25,7 @@
 
       import * as THREE from 'https://unpkg.com/three/build/three.module.js';
       import { ARButton } from 'https://unpkg.com/three/examples/jsm/webxr/ARButton.js';
+      import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js';
 
       let container;
       let camera, scene, renderer;
@@ -33,6 +34,7 @@
 
       let hitTestSource = null;
       let hitTestSourceRequested = false;
+      let model; // Variabile per il modello 3D
 
       init();
 
@@ -73,7 +75,15 @@
 
         // Setup AR controller
         controller = renderer.xr.getController(0);
+        controller.addEventListener('select', onSelect); // Listener per il tap
         scene.add(controller);
+
+        // Carica il modello 3D (GLB)
+        const loader = new GLTFLoader();
+        loader.load('assets/3G-C2.glb', (gltf) => {
+          model = gltf.scene;
+          model.scale.set(0.1, 0.1, 0.1); // Scala il modello se necessario
+        });
 
         // Window resize listener
         window.addEventListener('resize', onWindowResize);
@@ -84,6 +94,15 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      // Funzione per gestire il tap
+      function onSelect() {
+        if (reticle.visible && model) {
+          const cloneModel = model.clone(); // Crea una copia del modello
+          reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
+          scene.add(cloneModel); // Aggiungi il modello alla scena
+        }
       }
 
       // Animation loop
