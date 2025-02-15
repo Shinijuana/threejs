@@ -40,6 +40,8 @@
       let touchStartDistance = 0; // Per la gestione del pinch
       let touchStartScale = 1; // Scala iniziale per il pinch
       let touchStartRotation = { x: 0, y: 0 }; // Angolo di rotazione iniziale
+      let touchStartPosition = { x: 0, y: 0 }; // Posizione di partenza per il drag
+      let isDragging = false; // Variabile di stato per il drag
 
       init();
 
@@ -124,7 +126,7 @@
           if (placedModel == false) {
             const cloneModel = model.clone();
             reticle.matrix.decompose(cloneModel.position, cloneModel.rotation, cloneModel.scale);
-            cloneModel.scale.set(0.5, 0.5, 0.5); // Scala il modello
+            cloneModel.scale.set(0.3, 0.3, 0.3); // Scala il modello
             cloneModel.castShadow = true;
             cloneModel.receiveShadow = true;
             scene.add(cloneModel);
@@ -142,9 +144,10 @@
           touchStartScale = selectedModel.scale.x; // Scala iniziale
         }
         if (event.touches.length === 1 && selectedModel) {
-          // Calcola la rotazione iniziale
-          touchStartRotation.x = event.touches[0].clientX;
-          touchStartRotation.y = event.touches[0].clientY;
+          // Calcola la posizione di partenza per il drag
+          touchStartPosition.x = event.touches[0].clientX;
+          touchStartPosition.y = event.touches[0].clientY;
+          isDragging = true;
         }
       }
 
@@ -157,13 +160,17 @@
           selectedModel.scale.set(touchStartScale * scaleFactor, touchStartScale * scaleFactor, touchStartScale * scaleFactor);
         }
 
-        if (event.touches.length === 1 && selectedModel) {
-          const deltaX = event.touches[0].clientX - touchStartRotation.x;
-          const deltaY = event.touches[0].clientY - touchStartRotation.y;
-          selectedModel.rotation.y += deltaX * 0.005; // Rotazione su Y
-          selectedModel.rotation.x += deltaY * 0.005; // Rotazione su X
-          touchStartRotation.x = event.touches[0].clientX;
-          touchStartRotation.y = event.touches[0].clientY;
+        if (event.touches.length === 1 && selectedModel && isDragging) {
+          const deltaX = event.touches[0].clientX - touchStartPosition.x;
+          const deltaY = event.touches[0].clientY - touchStartPosition.y;
+          
+          // Muovi il modello (trascinamento) lungo X e Z
+          selectedModel.position.x += deltaX * 0.01; // Velocità di movimento
+          selectedModel.position.z += deltaY * 0.01; // Velocità di movimento
+
+          // Aggiorna la posizione di partenza per il drag
+          touchStartPosition.x = event.touches[0].clientX;
+          touchStartPosition.y = event.touches[0].clientY;
         }
       }
 
@@ -182,7 +189,7 @@
           touchStartScale = 1;
         }
         if (event.touches.length < 1) {
-          touchStartRotation = { x: 0, y: 0 };
+          isDragging = false;
         }
       }
 
