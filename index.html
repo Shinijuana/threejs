@@ -85,8 +85,11 @@
         const loader = new GLTFLoader();
           loader.load('assets/3G-C2.glb', (gltf) => {
           model = gltf.scene;
-          model.scale.set(0.05, 0.05, 0.05); // Riduce ulteriormente la scala
+          model.scale.set(0.1, 0.1, 0.1); // Modifica la scala
+          model.updateMatrixWorld(); // Assicura che le trasformazioni siano applicate
+          scene.add(model); // Aggiungi il modello alla scena
         });
+
 
         
 
