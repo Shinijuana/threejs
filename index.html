@@ -4,7 +4,6 @@
     <title>three.js ar - model</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <link type="text/css" rel="stylesheet" href="main.css">
 </head>
 <body>
     <div id="info">
@@ -44,7 +43,8 @@
             renderer.xr.enabled = true;
             container.appendChild(renderer.domElement);
 
-            document.body.appendChild(ARButton.createButton(renderer));
+            // Caricamento del bottone AR
+            document.body.appendChild(ARButton.createButton(renderer)); // Aggiungi il bottone AR
 
             loader = new GLTFLoader(); // Inizializza il loader GLTF
 
