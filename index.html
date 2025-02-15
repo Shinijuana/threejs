@@ -80,13 +80,13 @@
 
         // Carica il modello 3D (commentato per il debug)
         // Se non funziona senza il caricamento del modello, puoi decommentarlo per provare successivamente.
-        /*
+        
         const loader = new GLTFLoader();
         loader.load('assets/3G-C2.glb', (gltf) => {
           model = gltf.scene;
           model.scale.set(0.1, 0.1, 0.1); // Scala il modello se necessario
         });
-        */
+        
 
         // Ascoltatore di resize finestra
         window.addEventListener('resize', onWindowResize);
