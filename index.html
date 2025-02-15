@@ -12,10 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/webxr/ARButton.js"></script>
 </head>
 <body>
-    <script type="module">
-        import * as THREE from 'three';
-        import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
-
+    <script>
+        // Inizializzazione di Three.js senza l'uso di `import`
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
         camera.position.z = 1;
@@ -25,8 +23,10 @@
         renderer.xr.enabled = true;
         document.body.appendChild(renderer.domElement);
 
+        // Pulsante AR
         document.body.appendChild(ARButton.createButton(renderer));
 
+        // Creazione di un cubo
         const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
         const material = new THREE.MeshNormalMaterial();
         const cube = new THREE.Mesh(geometry, material);
