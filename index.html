@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebAR with Three.js</title>
     <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js';
-        import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/webxr/ARButton.js';
-        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/GLTFLoader.js';
+       import * as THREE from 'https://cdn.skypack.dev/three';
+       import { ARButton } from 'https://cdn.skypack.dev/three/examples/jsm/webxr/ARButton.js';
+       import { GLTFLoader } from 'https://cdn.skypack.dev/three/examples/jsm/loaders/GLTFLoader.js';
+
 
         let scene, camera, renderer;
         let hitTestSource = null;
